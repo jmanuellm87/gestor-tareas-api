@@ -44,6 +44,8 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    if task.status.value == "done":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot update a completed task")
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(task, field, value)
     db.commit()
