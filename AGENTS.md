@@ -30,8 +30,7 @@ task-manager-api/
 ├── tests/
 │   └── test_tasks.py      # Tests con pytest y SQLite en memoria
 ├── requirements.txt
-└── .devin/
-    └── instructions.md
+└── AGENTS.md
 ```
 
 ## Cómo arrancar la API
