@@ -75,6 +75,8 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
 def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     """Crea una nueva tarea y la persiste en la base de datos.
 
+    La descripción, si se envía, no puede superar los 500 caracteres.
+
     Args:
         payload (TaskCreate): Esquema Pydantic con los datos de
             la nueva tarea.
@@ -85,6 +87,10 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
         Task: Instancia del modelo ORM de la tarea recién creada,
             incluyendo el identificador y la fecha de creación
             asignados por la base de datos.
+
+    Raises:
+        ValidationError: Si la descripción supera los 500 caracteres
+            (código 422).
     """
     task = Task(**payload.model_dump())
     db.add(task)
@@ -99,7 +105,9 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     """Actualiza parcialmente una tarea existente.
 
     Solo modifica los campos incluidos en el cuerpo de la petición;
-    los campos no enviados conservan su valor actual.
+    los campos no enviados conservan su valor actual. El título, si
+    se envía, debe tener al menos 3 caracteres. La descripción no
+    puede superar los 500 caracteres.
 
     Args:
         task_id (int): Identificador único de la tarea a actualizar.
@@ -114,6 +122,8 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     Raises:
         HTTPException: Si no se encuentra ninguna tarea con el
             identificador proporcionado (código 404).
+        ValidationError: Si el título tiene menos de 3 caracteres
+            o la descripción supera los 500 caracteres (código 422).
     """
     task = get_task_or_404(task_id, db)
     for field, value in payload.model_dump(exclude_unset=True).items():
