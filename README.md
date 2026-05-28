@@ -141,7 +141,7 @@ curl http://127.0.0.1:8000/tasks/1
 |---|---|
 | **Método** | `POST` |
 | **Ruta** | `/tasks/` |
-| **Cuerpo (JSON)** | `title` (str, obligatorio), `description` (str, opcional), `status` (str, opcional — por defecto `"pending"`) |
+| **Cuerpo (JSON)** | `title` (str, obligatorio), `description` (str, opcional, máx. 500 caracteres), `status` (str, opcional — por defecto `"pending"`) |
 
 Valores válidos para `status`: `"pending"`, `"in_progress"`, `"done"`.
 
@@ -174,9 +174,9 @@ curl -X POST http://127.0.0.1:8000/tasks/ \
 | **Método** | `PATCH` |
 | **Ruta** | `/tasks/{task_id}` |
 | **Parámetros de ruta** | `task_id` (int) — Identificador de la tarea |
-| **Cuerpo (JSON)** | `title` (str, opcional, mín. 3 caracteres), `description` (str, opcional), `status` (str, opcional) |
+| **Cuerpo (JSON)** | `title` (str, opcional, mín. 3 caracteres), `description` (str, opcional, máx. 500 caracteres), `status` (str, opcional) |
 
-Solo se modifican los campos incluidos en el cuerpo de la petición. Si se envía `title`, debe tener al menos 3 caracteres; de lo contrario se devuelve `422 Unprocessable Entity`.
+Solo se modifican los campos incluidos en el cuerpo de la petición. Si se envía `title`, debe tener al menos 3 caracteres. Si se envía `description`, no puede superar los 500 caracteres. En ambos casos se devuelve `422 Unprocessable Entity` si no se cumple la restricción.
 
 **Ejemplo de request:**
 

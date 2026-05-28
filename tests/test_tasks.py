@@ -134,6 +134,22 @@ class TestCreateTask:
         assert resp.status_code == 201
         assert resp.json()["status"] == "done"
 
+    def test_description_too_long(self):
+        long_desc = "A" * 501
+        resp = client.post(
+            "/tasks/", json={"title": "Tarea", "description": long_desc}
+        )
+        assert resp.status_code == 422
+        assert any("500" in str(e) for e in resp.json()["detail"])
+
+    def test_description_exact_max_length(self):
+        desc = "A" * 500
+        resp = client.post(
+            "/tasks/", json={"title": "Tarea", "description": desc}
+        )
+        assert resp.status_code == 201
+        assert resp.json()["description"] == desc
+
     def test_extra_fields_ignored(self):
         resp = client.post(
             "/tasks/", json={"title": "T", "unknown_field": "val"}
@@ -204,6 +220,24 @@ class TestUpdateTask:
         assert body["title"] == "Nuevo"
         assert body["description"] == "Desc nueva"
         assert body["status"] == "in_progress"
+
+    def test_description_too_long(self):
+        created = create_sample_task().json()
+        long_desc = "A" * 501
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"description": long_desc}
+        )
+        assert resp.status_code == 422
+        assert any("500" in str(e) for e in resp.json()["detail"])
+
+    def test_description_exact_max_length(self):
+        created = create_sample_task().json()
+        desc = "A" * 500
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"description": desc}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["description"] == desc
 
     def test_title_too_short(self):
         created = create_sample_task().json()
