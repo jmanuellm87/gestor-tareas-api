@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from aplicacion.modelos import TaskStatus
 
@@ -17,7 +17,7 @@ class TaskCreate(BaseModel):
 
 # Esquema para actualizar una tarea; todos los campos son opcionales (PATCH parcial)
 class TaskUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Optional[str] = Field(default=None, min_length=3)
     description: Optional[str] = None
     status: Optional[TaskStatus] = None
 

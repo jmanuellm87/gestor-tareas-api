@@ -147,7 +147,7 @@ class TestCreateTask:
 # ===========================================================================
 class TestUpdateTask:
     def test_not_found(self):
-        resp = client.patch("/tasks/9999", json={"title": "X"})
+        resp = client.patch("/tasks/9999", json={"title": "XYZ"})
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Task not found"
 
@@ -204,6 +204,25 @@ class TestUpdateTask:
         assert body["title"] == "Nuevo"
         assert body["description"] == "Desc nueva"
         assert body["status"] == "in_progress"
+
+    def test_title_too_short(self):
+        created = create_sample_task().json()
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"title": "AB"}
+        )
+        assert resp.status_code == 422
+        assert any(
+            "3" in str(e)
+            for e in resp.json()["detail"]
+        )
+
+    def test_title_exact_min_length(self):
+        created = create_sample_task().json()
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"title": "ABC"}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["title"] == "ABC"
 
     def test_null_description_clears(self):
         created = create_sample_task(description="Has desc").json()

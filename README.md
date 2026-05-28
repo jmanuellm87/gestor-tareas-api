@@ -174,9 +174,9 @@ curl -X POST http://127.0.0.1:8000/tasks/ \
 | **Método** | `PATCH` |
 | **Ruta** | `/tasks/{task_id}` |
 | **Parámetros de ruta** | `task_id` (int) — Identificador de la tarea |
-| **Cuerpo (JSON)** | `title` (str, opcional), `description` (str, opcional), `status` (str, opcional) |
+| **Cuerpo (JSON)** | `title` (str, opcional, mín. 3 caracteres), `description` (str, opcional), `status` (str, opcional) |
 
-Solo se modifican los campos incluidos en el cuerpo de la petición.
+Solo se modifican los campos incluidos en el cuerpo de la petición. Si se envía `title`, debe tener al menos 3 caracteres; de lo contrario se devuelve `422 Unprocessable Entity`.
 
 **Ejemplo de request:**
 

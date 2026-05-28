@@ -99,7 +99,8 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     """Actualiza parcialmente una tarea existente.
 
     Solo modifica los campos incluidos en el cuerpo de la petición;
-    los campos no enviados conservan su valor actual.
+    los campos no enviados conservan su valor actual. El título, si
+    se envía, debe tener al menos 3 caracteres.
 
     Args:
         task_id (int): Identificador único de la tarea a actualizar.
@@ -114,6 +115,8 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     Raises:
         HTTPException: Si no se encuentra ninguna tarea con el
             identificador proporcionado (código 404).
+        ValidationError: Si el título tiene menos de 3 caracteres
+            (código 422).
     """
     task = get_task_or_404(task_id, db)
     for field, value in payload.model_dump(exclude_unset=True).items():
