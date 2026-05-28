@@ -123,6 +123,19 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     return task
 
 
+# Elimina todas las tareas de la base de datos; devuelve 204 sin cuerpo
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_tasks(db: Session = Depends(get_db)):
+    """Elimina todas las tareas almacenadas en la base de datos.
+
+    Args:
+        db (Session): Sesión activa de SQLAlchemy inyectada
+            por FastAPI.
+    """
+    db.query(Task).delete()
+    db.commit()
+
+
 # Elimina una tarea de la base de datos; devuelve 204 sin cuerpo
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(task_id: int, db: Session = Depends(get_db)):

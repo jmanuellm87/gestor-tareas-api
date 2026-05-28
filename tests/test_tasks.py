@@ -245,6 +245,30 @@ class TestDeleteTask:
 
 
 # ===========================================================================
+# DELETE /tasks/ - delete all
+# ===========================================================================
+class TestDeleteAllTasks:
+    def test_delete_all(self):
+        create_sample_task(title="A")
+        create_sample_task(title="B")
+        create_sample_task(title="C")
+        resp = client.delete("/tasks/")
+        assert resp.status_code == 204
+        assert resp.content == b""
+        listing = client.get("/tasks/")
+        assert listing.status_code == 200
+        assert listing.json() == []
+
+    def test_delete_all_empty_db(self):
+        resp = client.delete("/tasks/")
+        assert resp.status_code == 204
+        assert resp.content == b""
+        listing = client.get("/tasks/")
+        assert listing.status_code == 200
+        assert listing.json() == []
+
+
+# ===========================================================================
 # get_db dependency
 # ===========================================================================
 class TestGetDbDependency:

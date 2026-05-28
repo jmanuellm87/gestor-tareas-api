@@ -208,7 +208,25 @@ curl -X PATCH http://127.0.0.1:8000/tasks/1 \
 
 ---
 
-### 5. Eliminar una tarea
+### 5. Eliminar todas las tareas
+
+| | |
+|---|---|
+| **Método** | `DELETE` |
+| **Ruta** | `/tasks/` |
+| **Parámetros** | Ninguno |
+
+**Ejemplo de request:**
+
+```bash
+curl -X DELETE http://127.0.0.1:8000/tasks/
+```
+
+**Response exitosa:** `204 No Content` (sin cuerpo).
+
+---
+
+### 6. Eliminar una tarea
 
 | | |
 |---|---|
