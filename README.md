@@ -1,6 +1,6 @@
 # API de Gestión de Tareas
 
-API REST para gestionar tareas construida con **FastAPI** y **SQLAlchemy**. Permite crear, consultar, actualizar y eliminar tareas. Cada tarea cuenta con un identificador único, título, descripción opcional, estado (`pending`, `in_progress`, `done`), prioridad (`low`, `medium`, `high` — por defecto `medium`) y fecha de creación automática.
+API REST para gestionar tareas construida con **FastAPI** y **SQLAlchemy**. Permite crear, consultar, actualizar y eliminar tareas. Cada tarea cuenta con un identificador único, título, descripción opcional, categoría opcional, estado (`pending`, `in_progress`, `done`), prioridad (`low`, `medium`, `high` — por defecto `medium`) y fecha de creación automática.
 
 ---
 
@@ -91,6 +91,7 @@ curl http://127.0.0.1:8000/tasks/
     "id": 1,
     "title": "Revisar documentación",
     "description": "Actualizar el README del proyecto",
+    "categoria": null,
     "status": "pending",
     "priority": "medium",
     "created_at": "2025-05-28T10:00:00"
@@ -121,6 +122,7 @@ curl http://127.0.0.1:8000/tasks/1
   "id": 1,
   "title": "Revisar documentación",
   "description": "Actualizar el README del proyecto",
+  "categoria": null,
   "status": "pending",
   "priority": "medium",
   "created_at": "2025-05-28T10:00:00"
@@ -143,7 +145,7 @@ curl http://127.0.0.1:8000/tasks/1
 |---|---|
 | **Método** | `POST` |
 | **Ruta** | `/tasks/` |
-| **Cuerpo (JSON)** | `title` (str, obligatorio), `description` (str, opcional), `status` (str, opcional — por defecto `"pending"`), `priority` (str, opcional — por defecto `"medium"`) |
+| **Cuerpo (JSON)** | `title` (str, obligatorio), `description` (str, opcional), `categoria` (str, opcional), `status` (str, opcional — por defecto `"pending"`), `priority` (str, opcional — por defecto `"medium"`) |
 
 Valores válidos para `status`: `"pending"`, `"in_progress"`, `"done"`.
 Valores válidos para `priority`: `"low"`, `"medium"`, `"high"`.
@@ -163,6 +165,7 @@ curl -X POST http://127.0.0.1:8000/tasks/ \
   "id": 2,
   "title": "Nueva tarea",
   "description": "Descripción de ejemplo",
+  "categoria": null,
   "status": "pending",
   "priority": "high",
   "created_at": "2025-05-28T10:05:00"
@@ -178,7 +181,7 @@ curl -X POST http://127.0.0.1:8000/tasks/ \
 | **Método** | `PATCH` |
 | **Ruta** | `/tasks/{task_id}` |
 | **Parámetros de ruta** | `task_id` (int) — Identificador de la tarea |
-| **Cuerpo (JSON)** | `title` (str, opcional), `description` (str, opcional), `status` (str, opcional), `priority` (str, opcional) |
+| **Cuerpo (JSON)** | `title` (str, opcional), `description` (str, opcional), `categoria` (str, opcional), `status` (str, opcional), `priority` (str, opcional) |
 
 Solo se modifican los campos incluidos en el cuerpo de la petición.
 
@@ -197,6 +200,7 @@ curl -X PATCH http://127.0.0.1:8000/tasks/1 \
   "id": 1,
   "title": "Revisar documentación",
   "description": "Actualizar el README del proyecto",
+  "categoria": null,
   "status": "done",
   "priority": "medium",
   "created_at": "2025-05-28T10:00:00"

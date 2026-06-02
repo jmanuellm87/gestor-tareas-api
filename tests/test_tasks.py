@@ -115,6 +115,7 @@ class TestCreateTask:
         assert body["status"] == "pending"
         assert body["priority"] == "medium"
         assert body["description"] is None
+        assert body["categoria"] is None
         assert "id" in body
         assert "created_at" in body
 
@@ -122,6 +123,7 @@ class TestCreateTask:
         resp = create_sample_task(
             title="Completa",
             description="Desc",
+            categoria="Trabajo",
             status="in_progress",
             priority="high",
         )
@@ -129,8 +131,15 @@ class TestCreateTask:
         body = resp.json()
         assert body["title"] == "Completa"
         assert body["description"] == "Desc"
+        assert body["categoria"] == "Trabajo"
         assert body["status"] == "in_progress"
         assert body["priority"] == "high"
+
+    def test_with_categoria(self):
+        resp = create_sample_task(categoria="Personal")
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["categoria"] == "Personal"
 
     def test_with_status_done(self):
         resp = create_sample_task(status="done")
@@ -353,6 +362,7 @@ class TestSchemas:
         assert tc.status.value == "pending"
         assert tc.priority.value == "medium"
         assert tc.description is None
+        assert tc.categoria is None
 
     def test_task_update_all_none(self):
         from aplicacion.esquemas import TaskUpdate
@@ -360,6 +370,7 @@ class TestSchemas:
         tu = TaskUpdate()
         assert tu.title is None
         assert tu.description is None
+        assert tu.categoria is None
         assert tu.status is None
         assert tu.priority is None
 
@@ -373,11 +384,13 @@ class TestSchemas:
             id=1,
             title="T",
             description=None,
+            categoria="Trabajo",
             status="pending",
             priority="medium",
             created_at=now,
         )
         assert tr.id == 1
+        assert tr.categoria == "Trabajo"
         assert tr.priority.value == "medium"
 
 
