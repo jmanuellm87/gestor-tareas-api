@@ -53,8 +53,8 @@ class TestListTasks:
         assert resp.json() == []
 
     def test_multiple_tasks(self):
-        create_sample_task(title="A")
-        create_sample_task(title="B")
+        create_sample_task(title="Tarea A")
+        create_sample_task(title="Tarea B")
         resp = client.get("/tasks/")
         assert resp.status_code == 200
         assert len(resp.json()) == 2
@@ -67,7 +67,7 @@ class TestGetTask:
     def test_not_found(self):
         resp = client.get("/tasks/9999")
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Task not found"
+        assert resp.json()["detail"] == "Tarea no encontrada"
 
     def test_not_found_zero_id(self):
         resp = client.get("/tasks/0")
@@ -148,7 +148,7 @@ class TestCreateTask:
 
     def test_extra_fields_ignored(self):
         resp = client.post(
-            "/tasks/", json={"title": "T", "unknown_field": "val"}
+            "/tasks/", json={"title": "Tarea", "unknown_field": "val"}
         )
         assert resp.status_code == 201
         assert "unknown_field" not in resp.json()
@@ -159,9 +159,9 @@ class TestCreateTask:
 # ===========================================================================
 class TestUpdateTask:
     def test_not_found(self):
-        resp = client.patch("/tasks/9999", json={"title": "X"})
+        resp = client.patch("/tasks/9999", json={"title": "Nueva"})
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Task not found"
+        assert resp.json()["detail"] == "Tarea no encontrada"
 
     def test_invalid_status(self):
         created = create_sample_task().json()
@@ -235,7 +235,7 @@ class TestDeleteTask:
     def test_not_found(self):
         resp = client.delete("/tasks/9999")
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Task not found"
+        assert resp.json()["detail"] == "Tarea no encontrada"
 
     def test_delete_existing(self):
         created = create_sample_task().json()
@@ -418,3 +418,70 @@ class TestModels:
         from aplicacion.modelos import Task
 
         assert Task.__tablename__ == "tasks"
+
+
+# ===========================================================================
+# Regresión: validación de longitud mínima del título en POST /tasks/
+# ===========================================================================
+class TestCreateTaskTitleValidation:
+    def test_title_empty_string(self):
+        resp = client.post("/tasks/", json={"title": ""})
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "El título debe tener al menos 3 caracteres"
+
+    def test_title_one_char(self):
+        resp = client.post("/tasks/", json={"title": "A"})
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "El título debe tener al menos 3 caracteres"
+
+    def test_title_two_chars(self):
+        resp = client.post("/tasks/", json={"title": "AB"})
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "El título debe tener al menos 3 caracteres"
+
+    def test_title_only_spaces(self):
+        resp = client.post("/tasks/", json={"title": "   "})
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "El título debe tener al menos 3 caracteres"
+
+    def test_title_three_chars_valid(self):
+        resp = client.post("/tasks/", json={"title": "ABC"})
+        assert resp.status_code == 201
+        assert resp.json()["title"] == "ABC"
+
+
+# ===========================================================================
+# Regresión: no se puede modificar una tarea ya completada (PATCH /tasks/{id})
+# ===========================================================================
+class TestUpdateCompletedTask:
+    def test_cannot_update_done_task_title(self):
+        created = create_sample_task(status="done").json()
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"title": "Nuevo título"}
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "No se puede modificar una tarea ya completada"
+
+    def test_cannot_update_done_task_status(self):
+        created = create_sample_task(status="done").json()
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"status": "pending"}
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "No se puede modificar una tarea ya completada"
+
+    def test_can_update_pending_task(self):
+        created = create_sample_task(status="pending").json()
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"title": "Actualizado"}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["title"] == "Actualizado"
+
+    def test_can_transition_to_done(self):
+        created = create_sample_task(status="in_progress").json()
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"status": "done"}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "done"

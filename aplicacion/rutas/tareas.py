@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from aplicacion.base_de_datos import get_db
 from aplicacion.esquemas import TaskCreate, TaskResponse, TaskUpdate
-from aplicacion.modelos import Task
+from aplicacion.modelos import Task, TaskStatus
 
 # Router con prefijo /tasks; agrupa todos los endpoints de tareas
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -75,6 +75,9 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
 def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     """Crea una nueva tarea y la persiste en la base de datos.
 
+    Valida que el título tenga al menos 3 caracteres (sin contar
+    espacios en blanco al inicio y al final).
+
     Args:
         payload (TaskCreate): Esquema Pydantic con los datos de
             la nueva tarea (título, descripción, estado y prioridad).
@@ -85,7 +88,16 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
         Task: Instancia del modelo ORM de la tarea recién creada,
             incluyendo el identificador, la prioridad y la fecha
             de creación asignados por la base de datos.
+
+    Raises:
+        HTTPException: Si el título tiene menos de 3 caracteres
+            (código 400).
     """
+    if len(payload.title.strip()) < 3:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El título debe tener al menos 3 caracteres",
+        )
     task = Task(**payload.model_dump())
     db.add(task)
     db.commit()
@@ -113,9 +125,15 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
 
     Raises:
         HTTPException: Si no se encuentra ninguna tarea con el
-            identificador proporcionado (código 404).
+            identificador proporcionado (código 404), o si la
+            tarea ya está completada (código 400).
     """
     task = get_task_or_404(task_id, db)
+    if task.status == TaskStatus.done:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede modificar una tarea ya completada",
+        )
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(task, field, value)
     db.commit()
