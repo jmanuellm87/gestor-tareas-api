@@ -77,14 +77,14 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
 
     Args:
         payload (TaskCreate): Esquema Pydantic con los datos de
-            la nueva tarea.
+            la nueva tarea (título, descripción, estado y prioridad).
         db (Session): Sesión activa de SQLAlchemy inyectada
             por FastAPI.
 
     Returns:
         Task: Instancia del modelo ORM de la tarea recién creada,
-            incluyendo el identificador y la fecha de creación
-            asignados por la base de datos.
+            incluyendo el identificador, la prioridad y la fecha
+            de creación asignados por la base de datos.
     """
     task = Task(**payload.model_dump())
     db.add(task)
@@ -104,7 +104,7 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     Args:
         task_id (int): Identificador único de la tarea a actualizar.
         payload (TaskUpdate): Esquema Pydantic con los campos a
-            modificar.
+            modificar (título, descripción, estado y/o prioridad).
         db (Session): Sesión activa de SQLAlchemy inyectada
             por FastAPI.
 

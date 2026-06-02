@@ -113,6 +113,7 @@ class TestCreateTask:
         assert resp.status_code == 201
         body = resp.json()
         assert body["status"] == "pending"
+        assert body["priority"] == "medium"
         assert body["description"] is None
         assert "id" in body
         assert "created_at" in body
@@ -122,12 +123,14 @@ class TestCreateTask:
             title="Completa",
             description="Desc",
             status="in_progress",
+            priority="high",
         )
         assert resp.status_code == 201
         body = resp.json()
         assert body["title"] == "Completa"
         assert body["description"] == "Desc"
         assert body["status"] == "in_progress"
+        assert body["priority"] == "high"
 
     def test_with_status_done(self):
         resp = create_sample_task(status="done")
@@ -197,6 +200,7 @@ class TestUpdateTask:
                 "title": "Nuevo",
                 "description": "Desc nueva",
                 "status": "in_progress",
+                "priority": "high",
             },
         )
         assert resp.status_code == 200
@@ -204,6 +208,7 @@ class TestUpdateTask:
         assert body["title"] == "Nuevo"
         assert body["description"] == "Desc nueva"
         assert body["status"] == "in_progress"
+        assert body["priority"] == "high"
 
     def test_null_description_clears(self):
         created = create_sample_task(description="Has desc").json()
@@ -280,6 +285,64 @@ class TestGetDbDependency:
 
 
 # ===========================================================================
+# Priority field (prioridad)
+# ===========================================================================
+class TestPriority:
+    def test_create_default_priority(self):
+        resp = create_sample_task()
+        assert resp.status_code == 201
+        assert resp.json()["priority"] == "medium"
+
+    def test_create_with_low_priority(self):
+        resp = create_sample_task(priority="low")
+        assert resp.status_code == 201
+        assert resp.json()["priority"] == "low"
+
+    def test_create_with_high_priority(self):
+        resp = create_sample_task(priority="high")
+        assert resp.status_code == 201
+        assert resp.json()["priority"] == "high"
+
+    def test_create_invalid_priority(self):
+        resp = client.post(
+            "/tasks/", json={"title": "X", "priority": "urgent"}
+        )
+        assert resp.status_code == 422
+        assert "detail" in resp.json()
+
+    def test_patch_priority(self):
+        created = create_sample_task().json()
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"priority": "high"}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["priority"] == "high"
+
+    def test_patch_invalid_priority(self):
+        created = create_sample_task().json()
+        resp = client.patch(
+            f"/tasks/{created['id']}", json={"priority": "urgent"}
+        )
+        assert resp.status_code == 422
+        assert "detail" in resp.json()
+
+    def test_priority_in_list(self):
+        create_sample_task(priority="low")
+        create_sample_task(priority="high")
+        resp = client.get("/tasks/")
+        assert resp.status_code == 200
+        priorities = [t["priority"] for t in resp.json()]
+        assert "low" in priorities
+        assert "high" in priorities
+
+    def test_priority_in_detail(self):
+        created = create_sample_task(priority="low").json()
+        resp = client.get(f"/tasks/{created['id']}")
+        assert resp.status_code == 200
+        assert resp.json()["priority"] == "low"
+
+
+# ===========================================================================
 # Schema validation (esquemas.py)
 # ===========================================================================
 class TestSchemas:
@@ -288,6 +351,7 @@ class TestSchemas:
 
         tc = TaskCreate(title="T")
         assert tc.status.value == "pending"
+        assert tc.priority.value == "medium"
         assert tc.description is None
 
     def test_task_update_all_none(self):
@@ -297,6 +361,7 @@ class TestSchemas:
         assert tu.title is None
         assert tu.description is None
         assert tu.status is None
+        assert tu.priority is None
 
     def test_task_response_from_orm(self):
         from datetime import datetime, timezone
@@ -309,9 +374,11 @@ class TestSchemas:
             title="T",
             description=None,
             status="pending",
+            priority="medium",
             created_at=now,
         )
         assert tr.id == 1
+        assert tr.priority.value == "medium"
 
 
 # ===========================================================================
@@ -325,6 +392,14 @@ class TestModels:
         assert TaskStatus.in_progress.value == "in_progress"
         assert TaskStatus.done.value == "done"
         assert len(TaskStatus) == 3
+
+    def test_task_priority_values(self):
+        from aplicacion.modelos import TaskPriority
+
+        assert TaskPriority.low.value == "low"
+        assert TaskPriority.medium.value == "medium"
+        assert TaskPriority.high.value == "high"
+        assert len(TaskPriority) == 3
 
     def test_task_table_name(self):
         from aplicacion.modelos import Task
