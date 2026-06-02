@@ -67,7 +67,7 @@ class TestGetTask:
     def test_not_found(self):
         resp = client.get("/tasks/9999")
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Task not found"
+        assert resp.json()["detail"] == "Tarea no encontrada"
 
     def test_not_found_zero_id(self):
         resp = client.get("/tasks/0")
@@ -149,7 +149,7 @@ class TestUpdateTask:
     def test_not_found(self):
         resp = client.patch("/tasks/9999", json={"title": "X"})
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Task not found"
+        assert resp.json()["detail"] == "Tarea no encontrada"
 
     def test_invalid_status(self):
         created = create_sample_task().json()
@@ -221,7 +221,7 @@ class TestDeleteTask:
     def test_not_found(self):
         resp = client.delete("/tasks/9999")
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "Task not found"
+        assert resp.json()["detail"] == "Tarea no encontrada"
 
     def test_delete_existing(self):
         created = create_sample_task().json()

@@ -129,7 +129,7 @@ curl http://127.0.0.1:8000/tasks/1
 
 ```json
 {
-  "detail": "Task not found"
+  "detail": "Tarea no encontrada"
 }
 ```
 
@@ -202,7 +202,7 @@ curl -X PATCH http://127.0.0.1:8000/tasks/1 \
 
 ```json
 {
-  "detail": "Task not found"
+  "detail": "Tarea no encontrada"
 }
 ```
 
@@ -246,7 +246,7 @@ curl -X DELETE http://127.0.0.1:8000/tasks/1
 
 ```json
 {
-  "detail": "Task not found"
+  "detail": "Tarea no encontrada"
 }
 ```
 
