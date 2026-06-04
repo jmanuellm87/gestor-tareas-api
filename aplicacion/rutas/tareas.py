@@ -7,34 +7,96 @@ from sqlalchemy.orm import Session
 
 from aplicacion.base_de_datos import get_db
 from aplicacion.esquemas import TaskCreate, TaskResponse, TaskUpdate
-from aplicacion.modelos import Task
+from aplicacion.modelos import Task, TaskStatus
 
 # Router con prefijo /tasks; agrupa todos los endpoints de tareas
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-# Devuelve la lista completa de tareas almacenadas
-@router.get("/", response_model=List[TaskResponse])
-def list_tasks(db: Session = Depends(get_db)):
-    return db.query(Task).all()
+def get_task_or_404(task_id: int, db: Session) -> Task:
+    """Busca una tarea por su identificador y lanza 404 si no existe.
 
+    Args:
+        task_id (int): Identificador único de la tarea.
+        db (Session): Sesión activa de SQLAlchemy.
 
-# Devuelve una tarea por su identificador; 404 si no existe
-@router.get("/{task_id}", response_model=TaskResponse)
-def get_task(task_id: int, db: Session = Depends(get_db)):
+    Returns:
+        Task: Instancia del modelo ORM correspondiente a la tarea.
+
+    Raises:
+        HTTPException: Si no se encuentra ninguna tarea con el
+            identificador proporcionado (código 404).
+    """
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     return task
 
 
+# Devuelve la lista completa de tareas almacenadas
+@router.get("/", response_model=List[TaskResponse])
+def list_tasks(db: Session = Depends(get_db)):
+    """Devuelve la lista completa de tareas almacenadas.
+
+    Args:
+        db (Session): Sesión activa de SQLAlchemy inyectada
+            por FastAPI.
+
+    Returns:
+        list[Task]: Lista con todas las tareas registradas en
+            la base de datos.
+    """
+    return db.query(Task).all()
+
+
+# Devuelve una tarea por su identificador; 404 si no existe
+@router.get("/{task_id}", response_model=TaskResponse)
+def get_task(task_id: int, db: Session = Depends(get_db)):
+    """Obtiene una tarea por su identificador.
+
+    Args:
+        task_id (int): Identificador único de la tarea.
+        db (Session): Sesión activa de SQLAlchemy inyectada
+            por FastAPI.
+
+    Returns:
+        Task: Instancia del modelo ORM correspondiente a la
+            tarea solicitada.
+
+    Raises:
+        HTTPException: Si no se encuentra ninguna tarea con el
+            identificador proporcionado (código 404).
+    """
+    return get_task_or_404(task_id, db)
+
+
 # Crea una nueva tarea y devuelve el recurso creado con código 201
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
-    if len(payload.title) < 3:
+    """Crea una nueva tarea y la persiste en la base de datos.
+
+    Valida que el título tenga al menos 3 caracteres (sin contar
+    espacios en blanco al inicio y al final).
+
+    Args:
+        payload (TaskCreate): Esquema Pydantic con los datos de
+            la nueva tarea (título, descripción, estado y prioridad).
+        db (Session): Sesión activa de SQLAlchemy inyectada
+            por FastAPI.
+
+    Returns:
+        Task: Instancia del modelo ORM de la tarea recién creada,
+            incluyendo el identificador, la prioridad y la fecha
+            de creación asignados por la base de datos.
+
+    Raises:
+        HTTPException: Si el título tiene menos de 3 caracteres
+            (código 400).
+    """
+    if len(payload.title.strip()) < 3:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Title must be at least 3 characters long",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El título debe tener al menos 3 caracteres",
         )
     task = Task(**payload.model_dump())
     db.add(task)
@@ -46,9 +108,32 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
 # Actualiza parcialmente una tarea; solo modifica los campos enviados en el cuerpo
 @router.patch("/{task_id}", response_model=TaskResponse)
 def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    """Actualiza parcialmente una tarea existente.
+
+    Solo modifica los campos incluidos en el cuerpo de la petición;
+    los campos no enviados conservan su valor actual.
+
+    Args:
+        task_id (int): Identificador único de la tarea a actualizar.
+        payload (TaskUpdate): Esquema Pydantic con los campos a
+            modificar (título, descripción, estado y/o prioridad).
+        db (Session): Sesión activa de SQLAlchemy inyectada
+            por FastAPI.
+
+    Returns:
+        Task: Instancia del modelo ORM con los datos actualizados.
+
+    Raises:
+        HTTPException: Si no se encuentra ninguna tarea con el
+            identificador proporcionado (código 404), o si la
+            tarea ya está completada (código 400).
+    """
+    task = get_task_or_404(task_id, db)
+    if task.status == TaskStatus.done:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede modificar una tarea ya completada",
+        )
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(task, field, value)
     db.commit()
@@ -56,11 +141,33 @@ def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)
     return task
 
 
+# Elimina todas las tareas de la base de datos; devuelve 204 sin cuerpo
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_tasks(db: Session = Depends(get_db)):
+    """Elimina todas las tareas almacenadas en la base de datos.
+
+    Args:
+        db (Session): Sesión activa de SQLAlchemy inyectada
+            por FastAPI.
+    """
+    db.query(Task).delete()
+    db.commit()
+
+
 # Elimina una tarea de la base de datos; devuelve 204 sin cuerpo
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(task_id: int, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    """Elimina una tarea de la base de datos.
+
+    Args:
+        task_id (int): Identificador único de la tarea a eliminar.
+        db (Session): Sesión activa de SQLAlchemy inyectada
+            por FastAPI.
+
+    Raises:
+        HTTPException: Si no se encuentra ninguna tarea con el
+            identificador proporcionado (código 404).
+    """
+    task = get_task_or_404(task_id, db)
     db.delete(task)
     db.commit()
