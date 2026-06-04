@@ -1,4 +1,7 @@
---- name: run-local description: Arrancar la API localmente, verificar que responde y ejecutar una prueba básica de los endpoints. ---
+--- 
+name: run-local 
+description: Arrancar la API localmente, verificar que responde y ejecutar una prueba básica de los endpoints. 
+---
 
 ## Contexto actual  
   
